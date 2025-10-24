@@ -1,16 +1,12 @@
 from fastapi import FastAPI
-from src.config.settings import settings
 
-app = FastAPI(
-    title="Reviews Insights API",
-    debug=settings.debug
-)
+from src.presentation.api.v1.endpoints import apple_store
+
+app = FastAPI(title="Reviews Insights API")
+
+app.include_router(apple_store.router, prefix="/api/v1")
 
 
 @app.get("/")
 async def root():
-    return {
-        "message": "Reviews Insights API",
-        "debug": settings.debug,
-        "openai_model": settings.openai_model
-    }
+    return {"message": "Reviews Insights API"}

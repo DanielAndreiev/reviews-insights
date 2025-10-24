@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "reviews-insights"
+version = "0.1.0"
+description = "This service helps you get actionable insights for your App Store app. Keep your app under control by analyzing user reviews, tracking sentiment, and identifying areas for improvement."
+authors = ["Danylo Andreiev <danyloandreiev@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.120.0"
+uvicorn = {extras = ["standard"], version = "^0.38.0"}
+pydantic = "^2.12.3"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.44"}
+openai = "^2.6.1"
+
+[tool.poetry.group.dev.dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+

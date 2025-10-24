@@ -1,0 +1,7 @@
+# Virtual Environment
+.venv/
+
+.DS_Store
+
+# Poetry
+poetry.lock

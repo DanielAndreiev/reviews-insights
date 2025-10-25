@@ -1,0 +1,9 @@
+Extract 3-5 key issues or topics from this negative app review.
+Return a JSON array of short keywords/phrases (2-4 words each).
+
+Review:
+{text}
+
+Example output: ["slow performance", "crashes", "poor UI"]
+
+Keywords:

@@ -1,0 +1,7 @@
+Analyze the sentiment of this app review.
+Return ONLY one word: positive, neutral, or negative.
+
+Review (rating {rating}/5):
+{text}
+
+Sentiment:

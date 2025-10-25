@@ -1,0 +1,10 @@
+Analyze this app review and provide 1-3 specific, actionable recommendations for improving the app.
+Each insight should be concise and directly address issues mentioned in the review.
+
+Review (rating {rating}/5):
+{text}
+
+Return a JSON array of strings with specific recommendations.
+Example: ["Reduce ad frequency", "Fix crash on startup", "Improve loading speed"]
+
+Insights:

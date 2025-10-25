@@ -1,13 +1,21 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.services import ReviewAnalysisService
 from src.config.settings import settings
 from src.infrastructure.collectors.factory import CollectorFactory
 from src.infrastructure.database import get_session
-from src.infrastructure.repositories import ReviewRepository
-from src.presentation.api.v1.schemas import AppleStoreCollectRequest
+from src.infrastructure.llm.factory import LLMServiceFactory
+from src.infrastructure.repositories import AnalysisRepository, ReviewRepository
+from src.presentation.api.v1.schemas import (
+    AppleStoreAnalyzeRequest,
+    AppleStoreAnalyzeResponse,
+    AppleStoreCollectRequest,
+    AppleStoreMetricsResponse,
+)
 
 router = APIRouter(prefix="/reviews/apple-store", tags=["Apple App Store"])
 
@@ -56,9 +64,141 @@ async def collect_apple_store_reviews(
                 for r in reviews
             ],
         }
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(
-            status_code=500, detail=f"Error collecting Apple Store reviews: {str(e)}"
+            status_code=500,
+            detail="Failed to collect reviews. Please try again later.",
+        )
+
+
+@router.post("/analyze", response_model=AppleStoreAnalyzeResponse)
+async def analyze_apple_store_reviews(
+    request: AppleStoreAnalyzeRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Run LLM analysis on collected reviews"""
+    try:
+        review_repo = ReviewRepository(session)
+        total_reviews = await review_repo.count_by_app_id(request.app_id)
+
+        if total_reviews == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No reviews found for app_id: {request.app_id}.",
+            )
+
+        reviews = await review_repo.get_by_app_id(request.app_id, is_analyzed=False)
+
+        if not reviews:
+            return AppleStoreAnalyzeResponse(
+                app_id=request.app_id,
+                total_reviews=total_reviews,
+                new=0,
+                status="completed",
+            )
+
+        llm_service = LLMServiceFactory.create("openai")
+        analysis_repo = AnalysisRepository(session)
+        analysis_service = ReviewAnalysisService(llm_service, analysis_repo, review_repo)
+
+        await analysis_service.analyze_reviews(request.app_id, reviews)
+
+        return AppleStoreAnalyzeResponse(
+            app_id=request.app_id,
+            total_reviews=total_reviews,
+            new=len(reviews),
+            status="processing",
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to analyze reviews. Please try again later.",
+        )
+
+
+@router.get("/metrics", response_model=AppleStoreMetricsResponse)
+async def get_apple_store_metrics(
+    app_id: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Get metrics and insights"""
+    try:
+        review_repo = ReviewRepository(session)
+        reviews = await review_repo.get_by_app_id(app_id, is_analyzed=True)
+
+        if not reviews:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No reviews found for app_id: {app_id}.",
+            )
+
+        analysis_repo = AnalysisRepository(session)
+        llm_service = LLMServiceFactory.create("openai")
+        service = ReviewAnalysisService(llm_service, analysis_repo, review_repo)
+
+        metrics = await service.get_app_metrics(app_id)
+
+        return AppleStoreMetricsResponse(
+            app_id=app_id,
+            total_reviews=len(reviews),
+            **metrics,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve metrics. Please try again later.",
+        )
+
+
+@router.get("/export")
+async def export_apple_store_reviews(
+    app_id: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Export raw JSON data with proper UTF-8 encoding (emoji support)"""
+    try:
+        review_repo = ReviewRepository(session)
+        reviews = await review_repo.get_by_app_id(app_id)
+
+        if not reviews:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No reviews found for app_id: {app_id}.",
+            )
+
+        reviews_data = [
+            {
+                "id": r.id,
+                "external_id": r.external_id,
+                "title": r.title,
+                "text": r.text,
+                "rating": r.rating,
+                "author": r.author,
+                "date": r.date.isoformat(),
+                "source": r.source,
+            }
+            for r in reviews
+        ]
+
+        response_data = {
+            "app_id": app_id,
+            "total_reviews": len(reviews),
+            "reviews": reviews_data,
+        }
+
+        return JSONResponse(content=response_data, media_type="application/json; charset=utf-8")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to export reviews. Please try again later.",
         )

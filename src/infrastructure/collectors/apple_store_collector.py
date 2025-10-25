@@ -42,7 +42,7 @@ class AppleStoreCollector(ReviewCollector):
         return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
     async def collect(self, app_id: str, limit: int = 100) -> list[CollectedReview]:
-        reviews = []
+        reviews: list[CollectedReview] = []
         page = 1
 
         async with httpx.AsyncClient(timeout=self.config.request_timeout) as client:

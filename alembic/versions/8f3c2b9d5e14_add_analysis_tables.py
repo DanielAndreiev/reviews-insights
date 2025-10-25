@@ -51,7 +51,7 @@ def upgrade() -> None:
         "insights",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("app_id", sa.String(length=255), nullable=False),
-        sa.Column("insight_type", sa.String(length=50), nullable=False),
+        sa.Column("review_id", sa.Integer(), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column(
             "created_at",
@@ -59,12 +59,19 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
+        sa.ForeignKeyConstraint(
+            ["review_id"],
+            ["reviews.id"],
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_insights_app_id"), "insights", ["app_id"], unique=False)
+    op.create_index(op.f("ix_insights_review_id"), "insights", ["review_id"], unique=False)
 
 
 def downgrade() -> None:
+    op.drop_index(op.f("ix_insights_review_id"), table_name="insights")
     op.drop_index(op.f("ix_insights_app_id"), table_name="insights")
     op.drop_table("insights")
     op.drop_index(op.f("ix_review_analysis_review_id"), table_name="review_analysis")

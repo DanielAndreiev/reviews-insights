@@ -5,6 +5,8 @@ from typing import Any
 
 import httpx
 
+from src.infrastructure.text_processing import TextProcessor
+
 from .base import CollectedReview, ReviewCollector
 
 
@@ -114,6 +116,9 @@ class AppleStoreCollector(ReviewCollector):
                 return None
 
             date = self._parse_apple_date(date_str)
+
+            title = TextProcessor.prepare(title)
+            text = TextProcessor.prepare(text)
 
             return CollectedReview(
                 external_id=review_id,

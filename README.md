@@ -24,6 +24,8 @@ API available at: `http://localhost:8000`
 
 Interactive API documentation: `http://localhost:8000/docs`
 
+For a complete analysis example, see [SAMPLE_REPORT.md](SAMPLE_REPORT.md) showcasing insights for Nebula app.
+
 ## API Endpoints
 
 **Collect Reviews**
@@ -31,7 +33,7 @@ Interactive API documentation: `http://localhost:8000/docs`
 POST /api/v1/reviews/apple-store/collect
 Content-Type: application/json
 
-{"app_id": "544007664", "limit": 50}
+{"app_id": "1459969523", "limit": 50}
 ```
 
 **Run Analysis**
@@ -39,17 +41,17 @@ Content-Type: application/json
 POST /api/v1/reviews/apple-store/analyze
 Content-Type: application/json
 
-{"app_id": "544007664"}
+{"app_id": "1459969523"}
 ```
 
 **Get Metrics**
 ```bash
-GET /api/v1/reviews/apple-store/metrics?app_id=544007664
+GET /api/v1/reviews/apple-store/metrics?app_id=1459969523
 ```
 
 **Export Data**
 ```bash
-GET /api/v1/reviews/apple-store/export?app_id=544007664
+GET /api/v1/reviews/apple-store/export?app_id=1459969523
 ```
 
 ## Approach & Design Decisions

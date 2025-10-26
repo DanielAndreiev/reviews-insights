@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews Insights CRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-50 h-screen overflow-hidden">
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
+            <p class="mt-4 text-gray-700 font-medium">Processing...</p>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+            <div class="p-4 border-b border-gray-200">
+                <h1 class="text-lg font-bold text-gray-900">Reviews Insights</h1>
+            </div>
+            <nav class="flex-1 overflow-y-auto p-4">
+                <button onclick="showTab('run')" id="navRun" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left mb-2 bg-blue-50 text-blue-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-medium">Run Analysis</span>
+                </button>
+                
+                <button onclick="showTab('apps')" id="navApps" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-gray-700 hover:bg-gray-50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                    </svg>
+                    <span class="font-medium">Apps</span>
+                </button>
+            </nav>
+        </aside>
+
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <div id="tabRun" class="flex flex-col h-full overflow-auto">
+                <div class="p-8 max-w-3xl flex-1 overflow-auto">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Step 1: Collect Reviews</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">App ID</label>
+                                <input 
+                                    type="text" 
+                                    id="collectAppId" 
+                                    placeholder="e.g., 1459969523"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Number of Reviews</label>
+                                <input 
+                                    type="number" 
+                                    id="collectLimit" 
+                                    value="100" 
+                                    min="10" 
+                                    max="500"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <button 
+                                onclick="collectReviews()" 
+                                class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium transition"
+                            >
+                                Collect Reviews
+                            </button>
+                        </div>
+                        <div id="collectStatus" class="mt-4 hidden">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <p class="text-green-800 font-medium">✓ <span id="collectMessage"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Step 2: Analyze Reviews</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">App ID</label>
+                                <input 
+                                    type="text" 
+                                    id="analyzeAppId" 
+                                    placeholder="e.g., 1459969523"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <button 
+                                onclick="analyzeReviews()" 
+                                class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium transition"
+                            >
+                                Start Analysis
+                            </button>
+                        </div>
+                        <div id="analyzeStatus" class="mt-4 hidden">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <p class="text-green-800 font-medium">✓ <span id="analyzeMessage"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <p class="text-sm text-gray-700 mb-2 font-medium">Quick Examples:</p>
+                        <div class="flex gap-2">
+                            <button onclick="fillExample('1459969523')" class="text-sm px-3 py-1 bg-white rounded border border-blue-200 text-blue-700 hover:bg-blue-100">
+                                Nebula (1459969523)
+                            </button>
+                            <button onclick="fillExample('544007664')" class="text-sm px-3 py-1 bg-white rounded border border-blue-200 text-blue-700 hover:bg-blue-100">
+                                YouTube (544007664)
+                            </button>
+                            <button onclick="fillExample('389801252')" class="text-sm px-3 py-1 bg-white rounded border border-blue-200 text-blue-700 hover:bg-blue-100">
+                                Instagram (389801252)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabApps" class="flex flex-col h-full overflow-auto hidden">
+                <div class="p-8 flex-1 overflow-auto">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Analyzed Apps</h2>
+                        <button onclick="loadAppsList()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                            Refresh
+                        </button>
+                    </div>
+                    <div id="appsList" class="grid grid-cols-1 gap-4">
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabDetails" class="flex flex-col h-full overflow-auto hidden">
+                <div class="p-8 flex-1 overflow-auto">
+                    <div class="flex items-center gap-4 mb-6">
+                        <button onclick="showTab('apps')" class="text-gray-600 hover:text-gray-900">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">App Insights</h2>
+                            <p class="text-gray-600 text-sm">App ID: <span id="detailsAppId" class="font-mono font-semibold"></span></p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="text-gray-500 text-sm font-medium mb-1">Total Reviews</div>
+                            <div id="detailsTotalReviews" class="text-3xl font-bold text-gray-900">-</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="text-gray-500 text-sm font-medium mb-1">Average Rating</div>
+                            <div id="detailsAvgRating" class="text-3xl font-bold text-blue-600">-</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="text-gray-500 text-sm font-medium mb-1">Positive Sentiment</div>
+                            <div id="detailsPositivePct" class="text-3xl font-bold text-green-600">-</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-4">Sentiment Distribution</h3>
+                            <canvas id="detailsSentimentChart"></canvas>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-4">Rating Distribution</h3>
+                            <canvas id="detailsRatingChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-6 mb-8">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Top Issues (Negative Reviews)</h3>
+                        <div id="detailsKeywords" class="flex flex-wrap gap-2">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Actionable Insights</h3>
+                        <ul id="detailsInsights" class="space-y-3">
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentTab = 'run';
+        let sentimentChart, ratingChart;
+
+        function showTab(tab) {
+            document.getElementById('tabRun').classList.add('hidden');
+            document.getElementById('tabApps').classList.add('hidden');
+            document.getElementById('tabDetails').classList.add('hidden');
+            
+            document.getElementById('navRun').classList.remove('bg-blue-50', 'text-blue-700');
+            document.getElementById('navRun').classList.add('text-gray-700', 'hover:bg-gray-50');
+            document.getElementById('navApps').classList.remove('bg-blue-50', 'text-blue-700');
+            document.getElementById('navApps').classList.add('text-gray-700', 'hover:bg-gray-50');
+            
+            currentTab = tab;
+            if (tab === 'run') {
+                document.getElementById('tabRun').classList.remove('hidden');
+                document.getElementById('navRun').classList.add('bg-blue-50', 'text-blue-700');
+                document.getElementById('navRun').classList.remove('text-gray-700', 'hover:bg-gray-50');
+            } else if (tab === 'apps') {
+                document.getElementById('tabApps').classList.remove('hidden');
+                document.getElementById('navApps').classList.add('bg-blue-50', 'text-blue-700');
+                document.getElementById('navApps').classList.remove('text-gray-700', 'hover:bg-gray-50');
+                loadAppsList();
+            } else if (tab === 'details') {
+                document.getElementById('tabDetails').classList.remove('hidden');
+            }
+        }
+
+        function fillExample(appId) {
+            document.getElementById('collectAppId').value = appId;
+            document.getElementById('analyzeAppId').value = appId;
+        }
+
+        async function collectReviews() {
+            const appId = document.getElementById('collectAppId').value.trim();
+            const limit = document.getElementById('collectLimit').value;
+            
+            if (!appId) {
+                alert('Please enter an App ID');
+                return;
+            }
+            
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('collectStatus').classList.add('hidden');
+            
+            try {
+                const response = await fetch('/api/v1/reviews/apple-store/collect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_id: appId, limit: parseInt(limit) })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to collect reviews: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                document.getElementById('collectMessage').textContent = 
+                    `Collected ${data.total_collected} reviews (${data.total_saved} new)`;
+                document.getElementById('collectStatus').classList.remove('hidden');
+                document.getElementById('analyzeAppId').value = appId;
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
+
+        async function analyzeReviews() {
+            const appId = document.getElementById('analyzeAppId').value.trim();
+            
+            if (!appId) {
+                alert('Please enter an App ID');
+                return;
+            }
+            
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('analyzeStatus').classList.add('hidden');
+            
+            try {
+                const response = await fetch('/api/v1/reviews/apple-store/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ app_id: appId })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to analyze reviews: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                document.getElementById('analyzeMessage').textContent = 
+                    `Analysis ${data.status}! ${data.new} reviews analyzed.`;
+                document.getElementById('analyzeStatus').classList.remove('hidden');
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
+
+        // Load Apps List
+        async function loadAppsList() {
+            const container = document.getElementById('appsList');
+            container.innerHTML = '<p class="text-gray-500">Loading apps...</p>';
+            
+            try {
+                const appsResponse = await fetch('/api/v1/reviews/apple-store/apps');
+                if (!appsResponse.ok) {
+                    throw new Error('Failed to fetch apps list');
+                }
+                
+                const appsData = await appsResponse.json();
+                const apps = appsData.apps;
+                
+                if (!apps || apps.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">No analyzed apps found. Go to "Run Analysis" to analyze an app.</p>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                for (const app of apps) {
+                    try {
+                        const response = await fetch(`/api/v1/reviews/apple-store/metrics?app_id=${app.app_id}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            const appCard = createAppCard(app.app_id, null, data);
+                            container.innerHTML += appCard;
+                        }
+                    } catch (e) {
+                        console.error(`Failed to load metrics for app ${app.app_id}:`, e);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error loading apps:', error);
+                container.innerHTML = '<p class="text-red-500">Error loading apps. Please try again.</p>';
+            }
+        }
+
+        function createAppCard(appId, name, data) {
+            const positivePct = data.total_reviews > 0 
+                ? Math.round((data.sentiments_summary.positive / data.total_reviews) * 100)
+                : 0;
+            
+            return `
+                <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6 cursor-pointer border border-gray-200"
+                     onclick="showAppDetails('${appId}')">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">App ${appId}</h3>
+                        <span class="text-sm font-medium px-3 py-1 rounded-full ${
+                            positivePct >= 70 ? 'bg-green-100 text-green-800' : 
+                            positivePct >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-red-100 text-red-800'
+                        }">
+                            ${positivePct}% Positive
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-gray-900">${data.total_reviews}</div>
+                            <div class="text-xs text-gray-500">Reviews</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-blue-600">${data.average_rating.toFixed(1)}</div>
+                            <div class="text-xs text-gray-500">Avg Rating</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-green-600">${data.sentiments_summary.positive}</div>
+                            <div class="text-xs text-gray-500">Positive</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function showAppDetails(appId) {
+            showTab('details');
+            document.getElementById('detailsAppId').textContent = appId;
+            
+            if (sentimentChart) sentimentChart.destroy();
+            if (ratingChart) ratingChart.destroy();
+            
+            try {
+                const response = await fetch(`/api/v1/reviews/apple-store/metrics?app_id=${appId}`);
+                if (!response.ok) throw new Error('Failed to load metrics');
+                
+                const data = await response.json();
+                
+                document.getElementById('detailsTotalReviews').textContent = data.total_reviews.toLocaleString();
+                document.getElementById('detailsAvgRating').textContent = data.average_rating.toFixed(1) + '/5';
+                
+                const totalSentiment = Object.values(data.sentiments_summary).reduce((a, b) => a + b, 0);
+                const positivePct = totalSentiment > 0 
+                    ? Math.round((data.sentiments_summary.positive / totalSentiment) * 100)
+                    : 0;
+                document.getElementById('detailsPositivePct').textContent = positivePct + '%';
+                
+                renderSentimentChart(data.sentiments_summary);
+                renderRatingChart(data.ratings_summary);
+                
+                renderKeywords(data.top_keywords);
+                
+                renderInsights(data.top_insights);
+                
+            } catch (error) {
+                alert('Error loading app details: ' + error.message);
+            }
+        }
+
+        function renderSentimentChart(sentiments) {
+            const ctx = document.getElementById('detailsSentimentChart').getContext('2d');
+            sentimentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Positive', 'Negative', 'Neutral'],
+                    datasets: [{
+                        data: [sentiments.positive || 0, sentiments.negative || 0, sentiments.neutral || 0],
+                        backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(156, 163, 175, 0.8)'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRatingChart(ratings) {
+            const ctx = document.getElementById('detailsRatingChart').getContext('2d');
+            const sortedRatings = Object.entries(ratings).sort((a, b) => a[0] - b[0]).reduce((acc, [key, value]) => {
+                acc[key] = value;
+                return acc;
+            }, {});
+
+            ratingChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(sortedRatings).map(r => `${r} ★`),
+                    datasets: [{
+                        label: 'Number of Reviews',
+                        data: Object.values(sortedRatings),
+                        backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: function(context) { return `Reviews: ${context.parsed.y}`; } } }
+                    }
+                }
+            });
+        }
+
+        function renderKeywords(keywords) {
+            const container = document.getElementById('detailsKeywords');
+            if (!keywords || keywords.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">No keywords available</p>';
+                return;
+            }
+            container.innerHTML = keywords.map(keyword => 
+                `<span class="inline-block bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-medium">${keyword}</span>`
+            ).join('');
+        }
+
+        function renderInsights(insights) {
+            const container = document.getElementById('detailsInsights');
+            if (!insights || insights.length === 0) {
+                container.innerHTML = '<li class="text-gray-500">No insights available</li>';
+                return;
+            }
+            container.innerHTML = insights.map(insight => 
+                `<li class="flex items-start">
+                    <svg class="w-6 h-6 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-gray-700">${insight}</span>
+                </li>`
+            ).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab('run');
+        });
+    </script>
+</body>
+</html>

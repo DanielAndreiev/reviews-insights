@@ -2,12 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.services import ReviewAnalysisService
 from src.config.settings import settings
 from src.infrastructure.collectors.factory import CollectorFactory
 from src.infrastructure.database import get_session
+from src.infrastructure.database.models import Review
 from src.infrastructure.llm.factory import LLMServiceFactory
 from src.infrastructure.repositories import AnalysisRepository, ReviewRepository
 from src.presentation.api.v1.schemas import (
@@ -201,4 +203,42 @@ async def export_apple_store_reviews(
         raise HTTPException(
             status_code=500,
             detail="Failed to export reviews. Please try again later.",
+        )
+
+
+@router.get("/apps")
+async def list_analyzed_apps(
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    Get list of all apps
+    """
+    try:
+        stmt = (
+            select(
+                Review.app_id,
+                func.count(Review.id).label("total_reviews"),
+                func.count(Review.id).filter(Review.is_analyzed == True).label("analyzed_reviews"),
+            )
+            .where(Review.is_analyzed == True)
+            .group_by(Review.app_id)
+        )
+        
+        result = await session.execute(stmt)
+        apps = result.all()
+        
+        apps_list = [
+            {
+                "app_id": app.app_id,
+                "total_reviews": app.total_reviews,
+                "analyzed_reviews": app.analyzed_reviews,
+            }
+            for app in apps
+        ]
+        
+        return {"apps": apps_list}
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch apps list. Please try again later.",
         )

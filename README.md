@@ -20,9 +20,10 @@ docker-compose up -d
 docker exec api python -m alembic upgrade head
 ```
 
-API available at: `http://localhost:8000`
-
-Interactive API documentation: `http://localhost:8000/docs`
+**Access Points:**
+- Dashboard: `http://localhost:8000/`
+- API Docs: `http://localhost:8000/docs`
+- API Base: `http://localhost:8000/api/v1`
 
 For a complete analysis example, see [SAMPLE_REPORT.md](SAMPLE_REPORT.md) showcasing insights for Nebula app.
 

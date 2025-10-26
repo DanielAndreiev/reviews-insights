@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.services import ReviewAnalysisService
@@ -218,15 +218,17 @@ async def list_analyzed_apps(
             select(
                 Review.app_id,
                 func.count(Review.id).label("total_reviews"),
-                func.count(Review.id).filter(Review.is_analyzed == True).label("analyzed_reviews"),
+                func.count(Review.id)
+                .filter(Review.is_analyzed.is_(True))
+                .label("analyzed_reviews"),
             )
-            .where(Review.is_analyzed == True)
+            .where(Review.is_analyzed.is_(True))
             .group_by(Review.app_id)
         )
-        
+
         result = await session.execute(stmt)
         apps = result.all()
-        
+
         apps_list = [
             {
                 "app_id": app.app_id,
@@ -235,7 +237,7 @@ async def list_analyzed_apps(
             }
             for app in apps
         ]
-        
+
         return {"apps": apps_list}
     except Exception:
         raise HTTPException(
